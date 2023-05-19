@@ -1,6 +1,12 @@
+from flask import Flask, request, jsonify
+import requests
+import time
 import random
 from sympy import is_quad_residue
 
+app = Flask(__name__)
+
+#tools
 def xgcd(a, b):
     """Euclid's extended algorithm:
     Given a, b, find gcd, x, y that solve the equation:
@@ -55,37 +61,10 @@ def is_prime(n):
     return True
 
 
+
 class Participant:
     def __init__(self, bit):
         self.bit = bit
-
-class Alice(Participant):
-    def __init__(self, bit, q):
-        super().__init__(bit)
-        self.q = q
-        self.k = random.randint(0, q - 1)
-        self.p = 2 * self.q + 1
-        self.g = self.fing_g()
-
-        #print(f"k={self.k} g={self.g}")
-    def send(self):
-        r = random.randint(2, self.q - 1)
-        if self.bit == 0:
-            cA = (pow(self.g, r, self.p), pow(self.g, r * self.k, self.p))
-        else:
-            cA = (pow(self.g, r, self.p), (self.g * pow(self.g, r * self.k, self.p)) % self.p)
-        return cA, self.q, self.g, pow(self.g, self.k, self.p)
-
-
-    def secureResult(self, cB):
-        return divide(cB[1], pow(cB[0], self.k, self.p), self.p)
-
-
-    def fing_g(self):
-        while True:
-            candidate = random.randint(2, self.p - 2)
-            if is_quad_residue(candidate, self.p):
-                return candidate
 
 class Bob(Participant):
     def __init__(self, bit):
@@ -100,34 +79,24 @@ class Bob(Participant):
             cB = (pow(cA[0], r_, p), multiply_modulo_big(pow(g, r_, p) , pow(cA[1], r_, p), p))
         return cB
 
-
-def run_protocol(bA, bB, q):
-    Alice_instance = Alice(bA, q)
-    Bob_instance = Bob(bB)
-    cA, q, g, gk = Alice_instance.send()
-    #print(f"from Alice : cA= {cA} q = {q}, g = {g}, gk = {gk}")
-    cB = Bob_instance.send(cA, q, g, gk)
-    #print(f"from Bob : cB= {cB}")
-    decrypted = Alice_instance.secureResult(cB)
-    #print(f"decrypted = {decrypted}")
-    if decrypted == 1:
-        return 0
-    else:
-        return 1
+@app.route('/calculate', methods=['POST'])
+def calculate():
+    public_data_from_Alice = request.get_json()
+    Bob_Instace = Bob(public_data_from_Alice['bB'])
+    rst_data = {}
+    rst_data['bB'] = Bob_Instace.send(public_data_from_Alice['cA'], public_data_from_Alice['q'], public_data_from_Alice['g'], public_data_from_Alice['gk'])
 
 
+    # do some calculations
 
-bA = 1
-bB = 1
-q = 23
+    return jsonify(rst_data), 200
 
+@app.route('/end', methods=['POST'])
+def end():
+    data = request.get_json()
+    # get final result from server A
+    print(f"Final result is: {data['result']}")
+    return jsonify(data), 200
 
-count_one= 0
-count_zero = 0
-for i in range(100000):
-    if run_protocol(bA, bB, q) == 1:
-        count_one += 1
-    else:
-        count_zero += 1
-
-print(f"count_one = {count_one} count_zero = {count_zero}")
+if __name__ == "__main__":
+    app.run(port=5001)

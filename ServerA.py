@@ -1,6 +1,12 @@
+from flask import Flask, request, jsonify
+import requests
+import time
 import random
 from sympy import is_quad_residue
 
+app = Flask(__name__)
+
+#tools
 def xgcd(a, b):
     """Euclid's extended algorithm:
     Given a, b, find gcd, x, y that solve the equation:
@@ -87,47 +93,27 @@ class Alice(Participant):
             if is_quad_residue(candidate, self.p):
                 return candidate
 
-class Bob(Participant):
-    def __init__(self, bit):
-        super().__init__(bit)
-
-    def send(self, cA, q, g, gk):
-        r_ = random.randint(2, q - 1)
-        p = 2 * q + 1
-        if self.bit == 0:
-            cB = (pow(cA[0], r_, p), pow(cA[1], r_, p))
-        else:
-            cB = (pow(cA[0], r_, p), multiply_modulo_big(pow(g, r_, p) , pow(cA[1], r_, p), p))
-        return cB
-
-
-def run_protocol(bA, bB, q):
-    Alice_instance = Alice(bA, q)
-    Bob_instance = Bob(bB)
-    cA, q, g, gk = Alice_instance.send()
-    #print(f"from Alice : cA= {cA} q = {q}, g = {g}, gk = {gk}")
-    cB = Bob_instance.send(cA, q, g, gk)
-    #print(f"from Bob : cB= {cB}")
-    decrypted = Alice_instance.secureResult(cB)
-    #print(f"decrypted = {decrypted}")
-    if decrypted == 1:
-        return 0
+@app.route('/start', methods=['POST'])
+def start():
+    private_data = request.get_json()
+    # do some calculations
+    q = 23
+    Alice_instance = Alice(int(private_data['bA']), q )
+    public_data = {}
+    public_data['cA'], public_data['q'], public_data['g'], public_data['gk'] = Alice_instance.send()
+    public_data['bB'] = 0
+    # send to server B and wait for a response
+    response = requests.post('http://localhost:5001/calculate', json=public_data)
+    rst_from_bob = response.json()
+    decrypted_result = Alice_instance.secureResult(rst_from_bob['bB'])
+    if decrypted_result == 1:
+        data = {'result': '0'}
     else:
-        return 1
+        data = {'result': '1'}
 
+    # send back to server B and third party
+    requests.post('http://localhost:5001/end', json=data)
+    return jsonify(data), 200
 
-
-bA = 1
-bB = 1
-q = 23
-
-
-count_one= 0
-count_zero = 0
-for i in range(100000):
-    if run_protocol(bA, bB, q) == 1:
-        count_one += 1
-    else:
-        count_zero += 1
-
-print(f"count_one = {count_one} count_zero = {count_zero}")
+if __name__ == "__main__":
+    app.run(port=5000)
