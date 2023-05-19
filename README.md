@@ -23,4 +23,4 @@ actor Bob
     Bob ->> ServerB : Algo result
     end
     deactivate Alice
-    ```
+ ```
