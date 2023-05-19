@@ -1,4 +1,5 @@
 import random
+from sympy import is_quad_residue
 
 def xgcd(a, b):
     """Euclid's extended algorithm:
@@ -58,7 +59,6 @@ class Participant:
     def __init__(self, bit):
         self.bit = bit
 
-
 class Alice(Participant):
     def __init__(self, bit, q):
         super().__init__(bit)
@@ -68,9 +68,8 @@ class Alice(Participant):
         self.g = self.fing_g()
 
         #print(f"k={self.k} g={self.g}")
-
     def send(self):
-        r = random.randint(0, self.q - 1)
+        r = random.randint(2, self.q - 1)
         if self.bit == 0:
             cA = (pow(self.g, r, self.p), pow(self.g, r * self.k, self.p))
         else:
@@ -83,21 +82,17 @@ class Alice(Participant):
 
 
     def fing_g(self):
-        x = random.randint(2, self.p)
-        p = pow(x,2,self.p)
-        while not is_prime(x):
-            x = random.randint(2, self.p)
-            p = pow(x, 2, self.p)
-        #print(f"x={x}")
-        return x
-
+        while True:
+            candidate = random.randint(2, self.p - 2)
+            if is_quad_residue(candidate, self.p):
+                return candidate
 
 class Bob(Participant):
     def __init__(self, bit):
         super().__init__(bit)
 
     def send(self, cA, q, g, gk):
-        r_ = random.randint(0, q - 1)
+        r_ = random.randint(2, q - 1)
         p = 2 * q + 1
         if self.bit == 0:
             cB = (pow(cA[0], r_, p), pow(cA[1], r_, p))
@@ -121,12 +116,18 @@ def run_protocol(bA, bB, q):
         return 1
 
 
-# Testing
-bA = 0
+
+bA = 1
 bB = 1
 q = 23
 
 
+count_one= 0
+count_zero = 0
+for i in range(100000):
+    if run_protocol(bA, bB, q) == 1:
+        count_one += 1
+    else:
+        count_zero += 1
 
-for i in range(100):
-    print(run_protocol(bA, bB, q))  # Outputs: 1
+print(f"count_one = {count_one} count_zero = {count_zero}")
