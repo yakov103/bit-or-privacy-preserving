@@ -6,6 +6,19 @@ from sympy import is_quad_residue
 
 app = Flask(__name__)
 
+bob_ready = False
+public_data_from_Alice_received = False
+
+@app.route('/health', methods=['GET'])
+def health():
+    i = 0
+    while not bob_ready:
+        time.sleep(0.1)
+        i += 1
+        if i % 20 == 0:
+            print("Bob is waiting for Alice")
+            print(f"bob_ready={bob_ready}")
+    return jsonify({'status': 'ok'}), 200
 #tools
 def xgcd(a, b):
     """Euclid's extended algorithm:
@@ -79,13 +92,53 @@ class Bob(Participant):
             cB = (pow(cA[0], r_, p), multiply_modulo_big(pow(g, r_, p) , pow(cA[1], r_, p), p))
         return cB
 
+@app.route('/BobBit', methods=['POST'])
+def BobBit():
+    global bob_instance
+    global bob_ready
+    global public_data_from_Alice_received
+    global data
+    bob_ready = False
+    public_data_from_Alice_received = False
+    private_data = request.get_json()
+    if private_data is None:
+        return jsonify({'error': 'No data provided'}), 400
+    if 'bB' not in private_data:
+        return jsonify({'error': 'No bit provided'}), 400
+    if int(private_data['bB']) not in [0, 1]:
+        return jsonify({'error': 'Invalid bit provided'}), 400
+    bob_instance = Bob(int(private_data['bB']))
+    bob_ready = True
+    # wait for Alice to health check localhost:5001/health
+    # send health check to Alice without the private data
+    print("Bob is ready")
+    alice_health = requests.get("http://localhost:5000/health")
+    print(alice_health.status_code)
+    if alice_health.status_code != 200:
+        return jsonify({'error': 'Alice is not ready'}), 400
+    # wait for Alice to send public data
+    i = 0
+    while not public_data_from_Alice_received:
+        i += 1
+        time.sleep(0.1)
+        if i % 20 == 0:
+            print("Bob is waiting for Alice")
+            print(f"public_data_from_Alice_received={public_data_from_Alice_received}")
+    # return data
+    return jsonify(data), 200
+
+
+
+
+
 @app.route('/calculate', methods=['POST'])
 def calculate():
     public_data_from_Alice = request.get_json()
-    Bob_Instace = Bob(public_data_from_Alice['bB'])
+    print(public_data_from_Alice)
     rst_data = {}
-    rst_data['bB'] = Bob_Instace.send(public_data_from_Alice['cA'], public_data_from_Alice['q'], public_data_from_Alice['g'], public_data_from_Alice['gk'])
-
+    print(bob_instance.bit)
+    rst_data['cB'] = bob_instance.send(public_data_from_Alice['cA'], public_data_from_Alice['q'], public_data_from_Alice['g'], public_data_from_Alice['gk'])
+    print(rst_data)
 
     # do some calculations
 
@@ -93,10 +146,14 @@ def calculate():
 
 @app.route('/end', methods=['POST'])
 def end():
+    global public_data_from_Alice_received
+    global data
     data = request.get_json()
     # get final result from server A
+    public_data_from_Alice_received = True
     print(f"Final result is: {data['result']}")
     return jsonify(data), 200
 
 if __name__ == "__main__":
-    app.run(port=5001)
+    bob_ready = False
+    app.run(port=5001, debug=True)

@@ -6,6 +6,8 @@ from sympy import is_quad_residue
 
 app = Flask(__name__)
 
+alice_ready = False
+
 #tools
 def xgcd(a, b):
     """Euclid's extended algorithm:
@@ -76,10 +78,13 @@ class Alice(Participant):
         #print(f"k={self.k} g={self.g}")
     def send(self):
         r = random.randint(2, self.q - 1)
+        print(f"r={r}")
         if self.bit == 0:
             cA = (pow(self.g, r, self.p), pow(self.g, r * self.k, self.p))
+            print(f"cA={cA}")
         else:
             cA = (pow(self.g, r, self.p), (self.g * pow(self.g, r * self.k, self.p)) % self.p)
+            print(f"cA={cA}")
         return cA, self.q, self.g, pow(self.g, self.k, self.p)
 
 
@@ -93,19 +98,61 @@ class Alice(Participant):
             if is_quad_residue(candidate, self.p):
                 return candidate
 
+
+@app.route('/health', methods=['GET'])
+def health():
+    i = 0
+    while not alice_ready:
+        time.sleep(0.1)
+        i += 1
+        if i % 20 == 0:
+            print("Alice is waiting for Bob")
+            print(f"alice_ready={alice_ready}")
+    return jsonify({'status': 'ok'}), 200
+
+
+
+@app.route('/AliceBit', methods=['POST'])
+def AliceBit():
+    global Alice_instance
+    global alice_ready
+    alice_ready = False
+    private_data = request.get_json()
+    if private_data is None:
+        return jsonify({'error': 'No data provided'}), 400
+    if 'bA' not in private_data:
+        return jsonify({'error': 'No bit provided'}), 400
+    if int(private_data['bA']) not in [0, 1]:
+        return jsonify({'error': 'Invalid bit provided'}), 400
+    q = 23
+    Alice_instance = Alice(int(private_data['bA']), q)
+    alice_ready = True
+    # wait for Bob to health check localhost:5001/health
+    print("Alice is ready")
+    bob_health = requests.get('http://localhost:5001/health')
+    print(bob_health.status_code)
+    if bob_health.status_code != 200:
+        return jsonify({'error': 'Bob is not ready'}), 400
+    else:
+        return jsonify(start()), 200
+
+
+
+
+
+
 @app.route('/start', methods=['POST'])
 def start():
     private_data = request.get_json()
     # do some calculations
-    q = 23
-    Alice_instance = Alice(int(private_data['bA']), q )
     public_data = {}
     public_data['cA'], public_data['q'], public_data['g'], public_data['gk'] = Alice_instance.send()
-    public_data['bB'] = 0
     # send to server B and wait for a response
+    print(f"public_data={public_data}")
     response = requests.post('http://localhost:5001/calculate', json=public_data)
     rst_from_bob = response.json()
-    decrypted_result = Alice_instance.secureResult(rst_from_bob['bB'])
+    decrypted_result = Alice_instance.secureResult(rst_from_bob['cB'])
+    print(f"decrypted_result={decrypted_result}")
     if decrypted_result == 1:
         data = {'result': '0'}
     else:
@@ -113,7 +160,8 @@ def start():
 
     # send back to server B and third party
     requests.post('http://localhost:5001/end', json=data)
-    return jsonify(data), 200
+    return data
 
 if __name__ == "__main__":
-    app.run(port=5000)
+    alice_ready = False
+    app.run(port=5000, debug=True)
