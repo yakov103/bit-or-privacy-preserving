@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify
 import requests
 import time
 import random
-from sympy import is_quad_residue
+from sympy import is_quad_residue, isprime
 
 app = Flask(__name__)
 
@@ -62,16 +62,16 @@ def multiply_modulo_big(num1, num2, m):
 
 
 #is_prime function
-def is_prime(n):
-    if n <= 1:
-        return False
-    elif n <= 3:
-        return True
-    else:
-        for i in range(2, int(n**0.5) + 1):
-            if n % i == 0:
-                return False
-    return True
+# def isprime(n):
+#     if n <= 1:
+#         return False
+#     elif n <= 3:
+#         return True
+#     else:
+#         for i in range(2, int(n**0.5) + 1):
+#             if n % i == 0:
+#                 return False
+#     return True
 
 
 
@@ -114,8 +114,6 @@ def BobBit():
     print("Bob is ready")
     alice_health = requests.get("http://localhost:5000/health")
     print(alice_health.status_code)
-    if alice_health.status_code != 200:
-        return jsonify({'error': 'Alice is not ready'}), 400
     # wait for Alice to send public data
     i = 0
     while not public_data_from_Alice_received:
@@ -139,9 +137,7 @@ def calculate():
     print(bob_instance.bit)
     rst_data['cB'] = bob_instance.send(public_data_from_Alice['cA'], public_data_from_Alice['q'], public_data_from_Alice['g'], public_data_from_Alice['gk'])
     print(rst_data)
-
     # do some calculations
-
     return jsonify(rst_data), 200
 
 @app.route('/end', methods=['POST'])

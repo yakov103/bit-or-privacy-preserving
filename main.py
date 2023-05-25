@@ -1,6 +1,14 @@
 import random
-from sympy import is_quad_residue
+from sympy import is_quad_residue , isprime
 
+
+def generate_prime(bits):
+    min_value = 2**(bits - 1)
+    max_value = 2**bits - 1
+    prime_candidate = random.randint(min_value, max_value)
+    while not isprime(prime_candidate) :
+        prime_candidate = random.randint(min_value, max_value)
+    return prime_candidate
 def xgcd(a, b):
     """Euclid's extended algorithm:
     Given a, b, find gcd, x, y that solve the equation:
@@ -43,16 +51,16 @@ def multiply_modulo_big(num1, num2, m):
 
 
 #is_prime function
-def is_prime(n):
-    if n <= 1:
-        return False
-    elif n <= 3:
-        return True
-    else:
-        for i in range(2, int(n**0.5) + 1):
-            if n % i == 0:
-                return False
-    return True
+# def isprime(n):
+#     if n <= 1:
+#         return False
+#     elif n <= 3:
+#         return True
+#     else:
+#         for i in range(2, int(n**0.5) + 1):
+#             if n % i == 0:
+#                 return False
+#     return True
 
 
 class Participant:
@@ -116,18 +124,20 @@ def run_protocol(bA, bB, q):
         return 1
 
 
+if __name__ == '__main__':
+    bA = 1
+    bB = 1
+    q = 23
 
-bA = 1
-bB = 1
-q = 23
 
+    count_one= 0
+    count_zero = 0
+    for i in range(1000):
+        q = generate_prime(30)
+        if run_protocol(bA, bB, q) == 1:
+            count_one += 1
+        else:
+            count_zero += 1
+            print(f"q = {q}")
 
-count_one= 0
-count_zero = 0
-for i in range(100000):
-    if run_protocol(bA, bB, q) == 1:
-        count_one += 1
-    else:
-        count_zero += 1
-
-print(f"count_one = {count_one} count_zero = {count_zero}")
+    print(f"count_one = {count_one} count_zero = {count_zero}")

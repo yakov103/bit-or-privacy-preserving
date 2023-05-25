@@ -2,13 +2,25 @@ from flask import Flask, request, jsonify
 import requests
 import time
 import random
-from sympy import is_quad_residue
+from sympy import is_quad_residue, isprime
 
 app = Flask(__name__)
 
 alice_ready = False
 
 #tools
+
+import random
+from sympy import isprime
+
+def generate_prime(bits):
+    min_value = 2**(bits - 1)
+    max_value = 2**bits - 1
+    prime_candidate = random.randint(min_value, max_value)
+    while not isprime(prime_candidate):
+        prime_candidate = random.randint(min_value, max_value)
+    return prime_candidate
+
 def xgcd(a, b):
     """Euclid's extended algorithm:
     Given a, b, find gcd, x, y that solve the equation:
@@ -38,7 +50,6 @@ def divide(A, B, m):
     else:
         raise ValueError('no quotient')
 
-
 def multiply_modulo_big(num1, num2, m):
     num1 %= m
     result = 0
@@ -51,17 +62,16 @@ def multiply_modulo_big(num1, num2, m):
 
 
 #is_prime function
-def is_prime(n):
-    if n <= 1:
-        return False
-    elif n <= 3:
-        return True
-    else:
-        for i in range(2, int(n**0.5) + 1):
-            if n % i == 0:
-                return False
-    return True
-
+# def isprime(n):
+#     if n <= 1:
+#         return False
+#     elif n <= 3:
+#         return True
+#     else:
+#         for i in range(2, int(n**0.5) + 1):
+#             if n % i == 0:
+#                 return False
+#     return True
 
 class Participant:
     def __init__(self, bit):
@@ -124,7 +134,7 @@ def AliceBit():
         return jsonify({'error': 'No bit provided'}), 400
     if int(private_data['bA']) not in [0, 1]:
         return jsonify({'error': 'Invalid bit provided'}), 400
-    q = 23
+    q = generate_prime(30)
     Alice_instance = Alice(int(private_data['bA']), q)
     alice_ready = True
     # wait for Bob to health check localhost:5001/health
@@ -157,7 +167,6 @@ def start():
         data = {'result': '0'}
     else:
         data = {'result': '1'}
-
     # send back to server B and third party
     requests.post('http://localhost:5001/end', json=data)
     return data
