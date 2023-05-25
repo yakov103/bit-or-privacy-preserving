@@ -3,15 +3,13 @@ import requests
 import time
 import random
 from sympy import is_quad_residue, isprime
+from flask_cors import CORS, cross_origin
 
 app = Flask(__name__)
+CORS(app)
 
 alice_ready = False
 
-#tools
-
-import random
-from sympy import isprime
 
 def generate_prime(bits):
     min_value = 2**(bits - 1)
@@ -123,6 +121,7 @@ def health():
 
 
 @app.route('/AliceBit', methods=['POST'])
+@cross_origin()
 def AliceBit():
     global Alice_instance
     global alice_ready
@@ -147,10 +146,6 @@ def AliceBit():
         return jsonify(start()), 200
 
 
-
-
-
-
 @app.route('/start', methods=['POST'])
 def start():
     private_data = request.get_json()
@@ -163,6 +158,7 @@ def start():
     rst_from_bob = response.json()
     decrypted_result = Alice_instance.secureResult(rst_from_bob['cB'])
     print(f"decrypted_result={decrypted_result}")
+
     if decrypted_result == 1:
         data = {'result': '0'}
     else:

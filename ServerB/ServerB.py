@@ -3,8 +3,10 @@ import requests
 import time
 import random
 from sympy import is_quad_residue, isprime
+from flask_cors import CORS, cross_origin
 
 app = Flask(__name__)
+CORS(app)
 
 bob_ready = False
 public_data_from_Alice_received = False
@@ -93,6 +95,7 @@ class Bob(Participant):
         return cB
 
 @app.route('/BobBit', methods=['POST'])
+@cross_origin()
 def BobBit():
     global bob_instance
     global bob_ready
