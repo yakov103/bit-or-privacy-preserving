@@ -1,3 +1,4 @@
+import asyncio
 from flask import Flask, request, jsonify
 import requests
 import time
@@ -122,7 +123,7 @@ def health():
 
 @app.route('/AliceBit', methods=['POST'])
 @cross_origin()
-def AliceBit():
+async def AliceBit():
     global Alice_instance
     global alice_ready
     alice_ready = False
@@ -138,7 +139,7 @@ def AliceBit():
     alice_ready = True
     # wait for Bob to health check localhost:5001/health
     print("Alice is ready")
-    bob_health = requests.get('http://localhost:5001/health')
+    bob_health = await requests.get('http://localhost:5001/health')
     print(bob_health.status_code)
     if bob_health.status_code != 200:
         return jsonify({'error': 'Bob is not ready'}), 400
@@ -147,14 +148,14 @@ def AliceBit():
 
 
 @app.route('/start', methods=['POST'])
-def start():
+async def start():
     private_data = request.get_json()
     # do some calculations
     public_data = {}
     public_data['cA'], public_data['q'], public_data['g'], public_data['gk'] = Alice_instance.send()
     # send to server B and wait for a response
     print(f"public_data={public_data}")
-    response = requests.post('http://localhost:5001/calculate', json=public_data)
+    response = await requests.post('http://localhost:5001/calculate', json=public_data)
     rst_from_bob = response.json()
     decrypted_result = Alice_instance.secureResult(rst_from_bob['cB'])
     print(f"decrypted_result={decrypted_result}")
@@ -164,7 +165,7 @@ def start():
     else:
         data = {'result': '1'}
     # send back to server B and third party
-    requests.post('http://localhost:5001/end', json=data)
+    await requests.post('http://localhost:5001/end', json=data)
     return data
 
 if __name__ == "__main__":

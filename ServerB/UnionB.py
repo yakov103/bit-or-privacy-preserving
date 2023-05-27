@@ -1,5 +1,5 @@
 
-
+import asyncio
 # num = 10
 # num_bits = 8
 #
@@ -10,14 +10,16 @@ import math
 import numpy as np
 import requests
 
-def orFunc(b):
+async def orFunc(b):
     ## send the bit (b) to the second player
     # a = listen to the second player --> and get the boolean result
 
     b = int(b)
     b_json = {'bB': b}
-    b_rst = requests.post('http://localhost:5001/BobBit', json=b_json)
-    print(b_rst)
+    b_rst = await requests.post('http://localhost:5001/BobBit', json=b_json)
+    
+    b = await b_rst.json()['result']
+    print(f"b={b}")
 
     return b
 
