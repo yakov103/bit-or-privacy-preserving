@@ -12,9 +12,13 @@ bob_ready = False
 public_data_from_Alice_received = False
 rotation_index = -1
 alice_index = 0
+flag_rotation = False
+
+
 
 @app.route('/health', methods=['GET'])
 def health():
+    global bob_ready
     i = 0
     while not bob_ready:
         time.sleep(0.1)
@@ -22,6 +26,20 @@ def health():
         if i % 20 == 0:
             print("Bob is waiting for Alice")
             print(f"bob_ready={bob_ready}")
+    return jsonify({'status': 'ok'}), 200
+
+
+@app.route('/health2', methods=['GET'])
+def health2():
+    global rotation_index
+    global flag_rotation
+    i = 0
+    while not flag_rotation:
+        time.sleep(0.1)
+        i += 1
+        if i % 20 == 0:
+            print("rotation_index is not updated")
+    flag_rotation = False
     return jsonify({'status': 'ok'}), 200
 
 @app.route('/rotation', methods=['POST'])
@@ -105,6 +123,7 @@ class Bob(Participant):
         else:
             cB = (pow(cA[0], r_, p), multiply_modulo_big(pow(g, r_, p) , pow(cA[1], r_, p), p))
         return cB
+    
 
 @app.route('/BobBit', methods=['POST'])
 @cross_origin()
@@ -115,12 +134,17 @@ def BobBit():
     global data
     global rotation_index
     global alice_index
+    global old_rotation_index
+    global flag_rotation
+    
     rotation_index+=1
+    flag_rotation = True
     while True: 
         print(f"alice_index={alice_index}")
         print(f"rotation_index={rotation_index}")
         if alice_index == rotation_index:
             break
+
         time.sleep(1)
     bob_ready = False
     public_data_from_Alice_received = False
@@ -170,6 +194,7 @@ def end():
     # get final result from server A
     public_data_from_Alice_received = True
     print(f"Final result is: {data['result']}")
+    print(f"rotation_index={rotation_index} at the end")
     return jsonify(data), 200
 
 if __name__ == "__main__":

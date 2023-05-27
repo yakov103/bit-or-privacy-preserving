@@ -73,5 +73,5 @@ def union(list,worldSize):
 
 
 if __name__ == '__main__':
-    list = [ 5]
-    print(union(list,6))
+    list = [5,10]
+    print(union(list,16))

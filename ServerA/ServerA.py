@@ -9,7 +9,7 @@ app = Flask(__name__)
 CORS(app)
 
 alice_ready = False
-rotation_index = 0
+rotation_index = -1
 
 def generate_prime(bits):
     min_value = 2**(bits - 1)
@@ -130,6 +130,8 @@ def AliceBit():
     global Alice_instance
     global alice_ready
     global rotation_index
+    rotation_index+=1
+
     print(f"rotation_index at start = {rotation_index}")
     while True: 
         bob_index_json = requests.post('http://localhost:5001/rotation' , json={'rotation_index': rotation_index})
@@ -137,7 +139,7 @@ def AliceBit():
         print(f"indexbob = {bob_index}")
         if bob_index == rotation_index:
             break
-        time.sleep(2)
+        time.sleep(3)
     alice_ready = False
     private_data = request.get_json()
     if private_data is None:
@@ -152,8 +154,7 @@ def AliceBit():
     # wait for Bob to health check localhost:5001/health
     print("Alice is ready")
     bob_health = requests.get('http://localhost:5001/health')
-    time.sleep(2)
-    rotation_index += 1
+    
     print(bob_health.status_code)
     if bob_health.status_code != 200:
         return jsonify({'error': 'Bob is not ready'}), 400
@@ -163,6 +164,7 @@ def AliceBit():
 
 @app.route('/start', methods=['POST'])
 def start():
+    global rotation_index
     private_data = request.get_json()
     # do some calculations
     public_data = {}
@@ -173,13 +175,17 @@ def start():
     rst_from_bob = response.json()
     decrypted_result = Alice_instance.secureResult(rst_from_bob['cB'])
     print(f"decrypted_result={decrypted_result}")
-
     if decrypted_result == 1:
         data = {'result': '0'}
     else:
         data = {'result': '1'}
     # send back to server B and third party
-    requests.post('http://localhost:5001/end', json=data)
+    bob_got_it = requests.post('http://localhost:5001/end', json=data)
+    while True:
+        if bob_got_it.status_code == 200:
+            break
+        time.sleep(1)
+  
     return data
 
 if __name__ == "__main__":
