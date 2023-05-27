@@ -138,7 +138,6 @@ def AliceBit():
         if bob_index == rotation_index:
             break
         time.sleep(2)
-
     alice_ready = False
     private_data = request.get_json()
     if private_data is None:
@@ -153,6 +152,7 @@ def AliceBit():
     # wait for Bob to health check localhost:5001/health
     print("Alice is ready")
     bob_health = requests.get('http://localhost:5001/health')
+    time.sleep(2)
     rotation_index += 1
     print(bob_health.status_code)
     if bob_health.status_code != 200:

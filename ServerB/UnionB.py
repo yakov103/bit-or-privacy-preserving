@@ -18,11 +18,13 @@ def orFunc(b):
     global index
     b = int(b)
     b_json = {'bB': b}
+    print("b_json: ",b_json)
     b_rst = requests.post('http://localhost:5001/BobBit', json=b_json)
-    b = b_rst.json()['result']
+    b = int(b_rst.json()['result'])
     print("index: ",index)
     print("b of index ",b)
     index+=1
+
    
     return b
 
@@ -71,5 +73,5 @@ def union(list,worldSize):
 
 
 if __name__ == '__main__':
-    list = [1, 2, 4]
-    print(union(list,16))
+    list = [ 5]
+    print(union(list,6))
