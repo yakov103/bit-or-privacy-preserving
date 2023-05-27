@@ -10,14 +10,19 @@ import math
 import numpy as np
 import requests
 
+index = 0 # index of the bit in the list
+
 def orFunc(b):
     ## send the bit (b) to the second player
     # a = listen to the second player --> and get the boolean result
-
+    global index
     b=int(b)
     b_json = {'bA': b}
     b_rst= requests.post('http://localhost:5000/AliceBit', json=b_json)
-    print(b_rst)
+    b = b_rst.json()['result']
+    print("index: ",index)
+    print("b of index ",b)
+    index+=1
 
 
     return b

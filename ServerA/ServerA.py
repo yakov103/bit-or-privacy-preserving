@@ -137,7 +137,7 @@ def AliceBit():
         print(f"indexbob = {bob_index}")
         if bob_index == rotation_index:
             break
-        time.sleep(1)
+        time.sleep(2)
 
     alice_ready = False
     private_data = request.get_json()

@@ -10,15 +10,20 @@ import math
 import numpy as np
 import requests
 
+index = 0 # index of the bit in the list
+
 def orFunc(b):
     ## send the bit (b) to the second player
     # a = listen to the second player --> and get the boolean result
-
+    global index
     b = int(b)
     b_json = {'bB': b}
     b_rst = requests.post('http://localhost:5001/BobBit', json=b_json)
-    print(b_rst)
-
+    b = b_rst.json()['result']
+    print("index: ",index)
+    print("b of index ",b)
+    index+=1
+   
     return b
 
 
@@ -66,5 +71,5 @@ def union(list,worldSize):
 
 
 if __name__ == '__main__':
-    list = [1, 2, 5]
+    list = [1, 2, 4]
     print(union(list,16))
