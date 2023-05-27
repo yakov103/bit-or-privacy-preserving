@@ -17,10 +17,6 @@ class TestAliceClient(unittest.TestCase):
             print(f"i={i}")
             i += 1
             self.assertEqual(int(b_rst['result']), b)
-        
-
-        
-
 
 if __name__ == '__main__':
     unittest.main()
