@@ -10,6 +10,8 @@ CORS(app)
 
 bob_ready = False
 public_data_from_Alice_received = False
+rotation_index = -1
+alice_index = 0
 
 @app.route('/health', methods=['GET'])
 def health():
@@ -21,6 +23,16 @@ def health():
             print("Bob is waiting for Alice")
             print(f"bob_ready={bob_ready}")
     return jsonify({'status': 'ok'}), 200
+
+@app.route('/rotation', methods=['POST'])
+def rotation():
+    global rotation_index
+    global alice_index
+
+    alice_index_json = request.get_json()
+    alice_index = alice_index_json['rotation_index']
+    print(f"alice_index from server= {alice_index}")
+    return jsonify({'rotation_index': rotation_index}), 200
 #tools
 def xgcd(a, b):
     """Euclid's extended algorithm:
@@ -101,6 +113,15 @@ def BobBit():
     global bob_ready
     global public_data_from_Alice_received
     global data
+    global rotation_index
+    global alice_index
+    rotation_index+=1
+    while True: 
+        print(f"alice_index={alice_index}")
+        print(f"rotation_index={rotation_index}")
+        if alice_index == rotation_index:
+            break
+        time.sleep(1)
     bob_ready = False
     public_data_from_Alice_received = False
     private_data = request.get_json()
@@ -116,7 +137,6 @@ def BobBit():
     # send health check to Alice without the private data
     print("Bob is ready")
     alice_health = requests.get("http://localhost:5000/health")
-    print(alice_health.status_code)
     # wait for Alice to send public data
     i = 0
     while not public_data_from_Alice_received:
@@ -135,7 +155,6 @@ def BobBit():
 @app.route('/calculate', methods=['POST'])
 def calculate():
     public_data_from_Alice = request.get_json()
-    print(public_data_from_Alice)
     rst_data = {}
     print(bob_instance.bit)
     rst_data['cB'] = bob_instance.send(public_data_from_Alice['cA'], public_data_from_Alice['q'], public_data_from_Alice['g'], public_data_from_Alice['gk'])

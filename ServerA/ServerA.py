@@ -9,7 +9,7 @@ app = Flask(__name__)
 CORS(app)
 
 alice_ready = False
-
+rotation_index = 0
 
 def generate_prime(bits):
     min_value = 2**(bits - 1)
@@ -118,6 +118,10 @@ def health():
             print(f"alice_ready={alice_ready}")
     return jsonify({'status': 'ok'}), 200
 
+@app.route('/rotation', methods=['GET'])
+def rotation():
+    return jsonify({'rotation_index': rotation_index}), 200
+
 
 
 @app.route('/AliceBit', methods=['POST'])
@@ -125,6 +129,16 @@ def health():
 def AliceBit():
     global Alice_instance
     global alice_ready
+    global rotation_index
+    print(f"rotation_index at start = {rotation_index}")
+    while True: 
+        bob_index_json = requests.post('http://localhost:5001/rotation' , json={'rotation_index': rotation_index})
+        bob_index = bob_index_json.json()['rotation_index']
+        print(f"indexbob = {bob_index}")
+        if bob_index == rotation_index:
+            break
+        time.sleep(1)
+
     alice_ready = False
     private_data = request.get_json()
     if private_data is None:
@@ -139,6 +153,7 @@ def AliceBit():
     # wait for Bob to health check localhost:5001/health
     print("Alice is ready")
     bob_health = requests.get('http://localhost:5001/health')
+    rotation_index += 1
     print(bob_health.status_code)
     if bob_health.status_code != 200:
         return jsonify({'error': 'Bob is not ready'}), 400
