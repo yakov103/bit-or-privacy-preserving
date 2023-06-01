@@ -66,25 +66,25 @@ open terminal for bob
 
 ```mermaid
 sequenceDiagram
-actor Alice
-actor Bob
+actor ServerA
+actor ServerB
     par send request
-    ServerA ->> Alice : 1 or 0 
-    activate Alice
-    ServerB ->> Bob : 1 or 0
+    UnionA ->> ServerA : 1 or 0 
+    activate ServerA
+    UnionB ->> ServerB : 1 or 0
     end
     
-    Alice ->> Alice: k
-    Alice ->> Bob: Ca , q , g , g^k
-    deactivate Alice
-    activate Bob
-    Bob ->> Alice : Cb
-    deactivate Bob
-    activate Alice
+    ServerA ->> ServerA: k
+    ServerA ->> ServerB: Ca , q , g , g^k
+    deactivate ServerA
+    activate ServerB
+    ServerB ->> ServerA : Cb
+    deactivate ServerB
+    activate ServerA
     par Return the same result
-    Alice ->> ServerA : Algo result is 1 or 0 
-    Alice ->> Bob: Algo result
-    Bob ->> ServerB : Algo result
+    ServerA ->> UnionA : Algo result is 1 or 0 
+    ServerA ->> ServerB: Algo result
+    ServerB ->> UnionB : Algo result
     end
-    deactivate Alice
+    deactivate ServerA
  ```
