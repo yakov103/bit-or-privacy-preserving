@@ -3,8 +3,7 @@
 # How to run
 
 ```bash
-    git clone https://github.com/yakov103/bit-or-privacy-preserving/tree/mix_the_code_with_union
-```
+    git clone -b mix_the_code_with_union https://github.com/yakov103/bit-or-privacy-preserving.git
 
 ```
     cd bit-or-privacy-preserving
